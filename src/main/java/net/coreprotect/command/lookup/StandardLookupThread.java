@@ -37,6 +37,10 @@ import net.coreprotect.utility.StringUtils;
 import net.coreprotect.utility.WorldUtils;
 
 public class StandardLookupThread implements Runnable {
+    private static final String HASHTAG_GLOBAL = "#global";
+    private static final String HASHTAG_CONTAINER = "#container";
+    private static final String A_ITEM = "a:item";
+    private static final String HASHTAG_HOPPER = "#hopper";
     private final CommandSender player;
     private final Command command;
     private final List<String> rollbackUsers;
@@ -113,17 +117,15 @@ public class StandardLookupThread implements Runnable {
                 Statement statement = connection.createStatement();
                 String baduser = "";
                 for (String check : rollbackUsers) {
-                    if ((!check.equals("#global") && !check.equals("#container")) || actions.contains(LookupAction.USERNAME)) {
+                    if ((!check.equals(HASHTAG_GLOBAL) && !check.equals(HASHTAG_CONTAINER)) || actions.contains(LookupAction.USERNAME)) {
                         exists = PlayerLookup.playerExists(connection, check);
                         if (!exists) {
                             baduser = check;
                             break;
                         }
-                        else if (actions.contains(LookupAction.USERNAME)) {
-                            if (ConfigHandler.uuidCache.get(check.toLowerCase(Locale.ROOT)) != null) {
-                                String uuid = ConfigHandler.uuidCache.get(check.toLowerCase(Locale.ROOT));
-                                uuidList.add(uuid);
-                            }
+                        else if (actions.contains(LookupAction.USERNAME) && ConfigHandler.uuidCache.get(check.toLowerCase(Locale.ROOT)) != null) {
+                            String uuid = ConfigHandler.uuidCache.get(check.toLowerCase(Locale.ROOT));
+                            uuidList.add(uuid);
                         }
                     }
                     else {
@@ -132,15 +134,15 @@ public class StandardLookupThread implements Runnable {
                 }
                 if (exists) {
                     for (String check : excludedUsers) {
-                        if (!check.equals("#global") && !check.equals("#hopper")) {
+                        if (!check.equals(HASHTAG_GLOBAL) && !check.equals(HASHTAG_HOPPER)) {
                             exists = PlayerLookup.playerExists(connection, check);
                             if (!exists) {
                                 baduser = check;
                                 break;
                             }
                         }
-                        else if (check.equals("#global")) {
-                            baduser = "#global";
+                        else if (check.equals(HASHTAG_GLOBAL)) {
+                            baduser = HASHTAG_GLOBAL;
                             exists = false;
                         }
                     }
@@ -153,15 +155,15 @@ public class StandardLookupThread implements Runnable {
                     }
 
                     int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
-                    boolean restrict_world = false;
+                    boolean restrictWorld = false;
                     if (radius != null) {
-                        restrict_world = true;
+                        restrictWorld = true;
                     }
                     if (finalLocation == null) {
-                        restrict_world = false;
+                        restrictWorld = false;
                     }
                     if (argWorldId > 0) {
-                        restrict_world = true;
+                        restrictWorld = true;
                         finalLocation = new Location(Bukkit.getServer().getWorld(WorldUtils.getWorldName(argWorldId)), x, y, z);
                     }
                     else if (finalLocation != null) {
@@ -184,16 +186,16 @@ public class StandardLookupThread implements Runnable {
                     }
 
                     if (checkRows) {
-                        rows = Lookup.countLookupRows(statement, player, uuidList, userList, blockList, excludedBlocks, excludedUsers, actions, finalLocation, radius, rowData, timeStart, timeEnd, restrict_world, true);
+                        rows = Lookup.countLookupRows(statement, player, uuidList, userList, blockList, excludedBlocks, excludedUsers, actions, finalLocation, radius, rowData, timeStart, timeEnd, restrictWorld, true);
                         rowData[3] = rows;
                         ConfigHandler.lookupRows.put(player.getName(), rowData);
                     }
                     if (count) {
-                        String row_format = NumberFormat.getInstance().format(rows);
-                        Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.LOOKUP_ROWS_FOUND, row_format, (rows == 1 ? Selector.FIRST : Selector.SECOND)));
+                        String rowFormat = NumberFormat.getInstance().format(rows);
+                        Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.LOOKUP_ROWS_FOUND, rowFormat, (rows == 1 ? Selector.FIRST : Selector.SECOND)));
                     }
                     else if (pageStart < rows) {
-                        List<String[]> lookupList = Lookup.performPartialLookup(statement, player, uuidList, userList, blockList, excludedBlocks, excludedUsers, actions, finalLocation, radius, rowData, timeStart, timeEnd, (int) pageStart, displayResults, restrict_world, true);
+                        List<String[]> lookupList = Lookup.performPartialLookup(statement, player, uuidList, userList, blockList, excludedBlocks, excludedUsers, actions, finalLocation, radius, rowData, timeStart, timeEnd, (int) pageStart, displayResults, restrictWorld, true);
 
                         Chat.sendMessage(player, Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.LOOKUP_HEADER, "CoreProtect" + Color.WHITE + " | " + Color.DARK_AQUA) + Color.WHITE + " -----");
                         if (actions.contains(LookupAction.CHAT) || actions.contains(LookupAction.COMMAND)) { // Chat/command
@@ -222,7 +224,7 @@ public class StandardLookupThread implements Runnable {
                                 int dataZ = Integer.parseInt(data[5]);
                                 int action = Integer.parseInt(data[6]);
                                 String timeago = ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, true);
-                                int timeLength = 50 + (ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, false).replaceAll("[^0-9]", "").length() * 6);
+                                int timeLength = 50 + (ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, false).replaceAll("\\D", "").length() * 6);
                                 String leftPadding = Color.BOLD + Strings.padStart("", 10, ' ');
                                 if (timeLength % 4 == 0) {
                                     leftPadding = Strings.padStart("", timeLength / 4, ' ');
@@ -233,7 +235,7 @@ public class StandardLookupThread implements Runnable {
 
                                 String tag = (action != 0 ? Color.GREEN + "+" : Color.RED + "-");
                                 Chat.sendComponent(player, timeago + " " + tag + " " + Color.DARK_AQUA + Phrase.build(Phrase.LOOKUP_LOGIN, Color.DARK_AQUA + dplayer + Color.WHITE, (action != 0 ? Selector.FIRST : Selector.SECOND)));
-                                Chat.sendComponent(player, Color.WHITE + leftPadding + Color.GREY + "^ " + ChatUtils.getCoordinates(command.getName(), wid, dataX, dataY, dataZ, true, true) + "");
+                                Chat.sendComponent(player, Color.WHITE + leftPadding + Color.GREY + "^ " + ChatUtils.getCoordinates(command.getName(), wid, dataX, dataY, dataZ, true, true));
                                 PluginChannelListener.getInstance().sendInfoData(player, Integer.parseInt(time), Phrase.LOOKUP_LOGIN, (action != 0 ? Selector.FIRST : Selector.SECOND), dplayer, -1, dataX, dataY, dataZ, wid);
                             }
                         }
@@ -257,7 +259,7 @@ public class StandardLookupThread implements Runnable {
                                 int dataZ = Integer.parseInt(data[5]);
                                 String message = data[6];
                                 String timeago = ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, true);
-                                int timeLength = 50 + (ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, false).replaceAll("[^0-9]", "").length() * 6);
+                                int timeLength = 50 + (ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, false).replaceAll("\\D", "").length() * 6);
                                 String leftPadding = Color.BOLD + Strings.padStart("", 10, ' ');
                                 if (timeLength % 4 == 0) {
                                     leftPadding = Strings.padStart("", timeLength / 4, ' ');
@@ -342,7 +344,7 @@ public class StandardLookupThread implements Runnable {
                                 String tag = Color.WHITE + "-";
 
                                 String timeago = ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, true);
-                                int timeLength = 50 + (ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, false).replaceAll("[^0-9]", "").length() * 6);
+                                int timeLength = 50 + (ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, false).replaceAll("\\D", "").length() * 6);
                                 String leftPadding = Color.BOLD + Strings.padStart("", 10, ' ');
                                 if (timeLength % 4 == 0) {
                                     leftPadding = Strings.padStart("", timeLength / 4, ' ');
@@ -369,7 +371,7 @@ public class StandardLookupThread implements Runnable {
                                     dname = MaterialUtils.getType(dtype).name().toLowerCase(Locale.ROOT);
                                     dname = StringUtils.nameFilter(dname, ddata);
                                 }
-                                if (dname.length() > 0 && !isPlayer) {
+                                if (!dname.isEmpty() && !isPlayer) {
                                     dname = "minecraft:" + dname.toLowerCase(Locale.ROOT) + "";
                                 }
 
@@ -379,8 +381,6 @@ public class StandardLookupThread implements Runnable {
                                     dname = blockNameSplit[1];
                                 }
 
-                                // Functions.sendMessage(player2, timeago+" " + ChatColors.WHITE + "- " + ChatColors.DARK_AQUA+rbd+""+dplayer+" " + ChatColors.WHITE+rbd+""+a+" " + ChatColors.DARK_AQUA+rbd+"#"+dtype+ChatColors.WHITE + ". " + ChatColors.GREY + "(x"+x+"/y"+y+"/z"+z+")");
-
                                 Phrase phrase = Phrase.LOOKUP_BLOCK;
                                 String selector = Selector.FIRST;
                                 String action = "a:block";
@@ -389,25 +389,25 @@ public class StandardLookupThread implements Runnable {
                                     String tooltip = ItemUtils.getEnchantments(metadata, dtype, amount);
 
                                     if (daction == 2 || daction == 3) {
-                                        phrase = Phrase.LOOKUP_ITEM; // {picked up|dropped}
+                                        phrase = Phrase.LOOKUP_ITEM; // picked up|dropped
                                         selector = (daction != 2 ? Selector.FIRST : Selector.SECOND);
                                         tag = (daction != 2 ? Color.GREEN + "+" : Color.RED + "-");
-                                        action = "a:item";
+                                        action = A_ITEM;
                                     }
                                     else if (daction == 4 || daction == 5) {
-                                        phrase = Phrase.LOOKUP_STORAGE; // {deposited|withdrew}
+                                        phrase = Phrase.LOOKUP_STORAGE; // deposited|withdrew
                                         selector = (daction != 4 ? Selector.FIRST : Selector.SECOND);
                                         tag = (daction != 4 ? Color.RED + "-" : Color.GREEN + "+");
-                                        action = "a:item";
+                                        action = A_ITEM;
                                     }
                                     else if (daction == 6 || daction == 7) {
-                                        phrase = Phrase.LOOKUP_PROJECTILE; // {threw|shot}
+                                        phrase = Phrase.LOOKUP_PROJECTILE; // threw|shot
                                         selector = (daction != 7 ? Selector.FIRST : Selector.SECOND);
                                         tag = Color.RED + "-";
-                                        action = "a:item";
+                                        action = A_ITEM;
                                     }
                                     else {
-                                        phrase = Phrase.LOOKUP_CONTAINER; // {added|removed}
+                                        phrase = Phrase.LOOKUP_CONTAINER; // added|removed
                                         selector = (daction != 0 ? Selector.FIRST : Selector.SECOND);
                                         tag = (daction != 0 ? Color.GREEN + "+" : Color.RED + "-");
                                         action = "a:container";
@@ -418,13 +418,13 @@ public class StandardLookupThread implements Runnable {
                                 }
                                 else {
                                     if (daction == 2 || daction == 3) {
-                                        phrase = Phrase.LOOKUP_INTERACTION; // {clicked|killed}
+                                        phrase = Phrase.LOOKUP_INTERACTION; // clicked|killed
                                         selector = (daction != 3 ? Selector.FIRST : Selector.SECOND);
                                         tag = (daction != 3 ? Color.WHITE + "-" : Color.RED + "-");
                                         action = (daction == 2 ? "a:click" : "a:kill");
                                     }
                                     else {
-                                        phrase = Phrase.LOOKUP_BLOCK; // {placed|broke}
+                                        phrase = Phrase.LOOKUP_BLOCK; // placed|broke
                                         selector = (daction != 0 ? Selector.FIRST : Selector.SECOND);
                                         tag = (daction != 0 ? Color.GREEN + "+" : Color.RED + "-");
                                     }
@@ -433,16 +433,16 @@ public class StandardLookupThread implements Runnable {
                                     PluginChannelListener.getInstance().sendData(player, Integer.parseInt(time), phrase, selector, dplayer, dname, (tag.contains("+") ? 1 : -1), dataX, dataY, dataZ, wid, rbd, false, tag.contains("+"));
                                 }
 
-                                action = (actions.size() == 0 ? " (" + action + ")" : "");
+                                action = (actions.isEmpty() ? " (" + action + ")" : "");
                                 Chat.sendComponent(player, Color.WHITE + leftPadding + Color.GREY + "^ " + ChatUtils.getCoordinates(command.getName(), wid, dataX, dataY, dataZ, true, true) + Color.GREY + Color.ITALIC + action);
                             }
                         }
                         if (rows > displayResults) {
-                            int total_pages = (int) Math.ceil(rows / (displayResults + 0.0));
+                            int totalPages = (int) Math.ceil(rows / (displayResults + 0.0));
                             if (actions.contains(LookupAction.CHAT) || actions.contains(LookupAction.COMMAND) || actions.contains(LookupAction.USERNAME) || (actions.contains(LookupAction.CONTAINER) && actions.contains(LookupAction.ITEM))) {
                                 Chat.sendMessage(player, "-----");
                             }
-                            Chat.sendComponent(player, ChatUtils.getPageNavigation(command.getName(), page, total_pages));
+                            Chat.sendComponent(player, ChatUtils.getPageNavigation(command.getName(), page, totalPages));
                         }
                     }
                     else if (rows > 0) {
