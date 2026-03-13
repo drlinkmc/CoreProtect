@@ -20,6 +20,7 @@ import org.bukkit.entity.Player;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.bukkit.BukkitAdapter;
+import net.coreprotect.command.lookup.LookupAction;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
@@ -45,7 +46,7 @@ public class Rollback extends RollbackUtil {
             long timeStart = System.currentTimeMillis();
             List<Object[]> lookupList = new ArrayList<>();
 
-            if (!actionList.contains(4) && !actionList.contains(5) && !checkUsers.contains("#container")) {
+            if (!actionList.contains(LookupAction.CONTAINER) && !actionList.contains(LookupAction.CONTAINER_LOCATION) && !checkUsers.contains("#container")) {
                 lookupList = Lookup.performLookupRaw(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, null, startTime, endTime, -1, -1, restrictWorld, lookup);
             }
 
@@ -57,7 +58,7 @@ public class Rollback extends RollbackUtil {
             List<Object> itemRestrictList = new ArrayList<>(restrictList);
             Map<Object, Boolean> itemExcludeList = new HashMap<>(excludeList);
 
-            if (actionList.contains(1)) {
+            if (actionList.contains(LookupAction.BLOCK_PLACE)) {
                 for (Object target : restrictList) {
                     if (target instanceof Material) {
                         if (!excludeList.containsKey(target)) {
@@ -73,11 +74,11 @@ public class Rollback extends RollbackUtil {
             }
 
             List<Object[]> itemList = new ArrayList<>();
-            if (Config.getGlobal().ROLLBACK_ITEMS && !checkUsers.contains("#container") && (actionList.size() == 0 || actionList.contains(4) || ROLLBACK_ITEMS) && preview == 0) {
+            if (Config.getGlobal().ROLLBACK_ITEMS && !checkUsers.contains("#container") && (actionList.size() == 0 || actionList.contains(LookupAction.CONTAINER) || ROLLBACK_ITEMS) && preview == 0) {
                 List<Integer> itemActionList = new ArrayList<>(actionList);
 
-                if (!itemActionList.contains(4)) {
-                    itemActionList.add(4);
+                if (!itemActionList.contains(LookupAction.CONTAINER)) {
+                    itemActionList.add(LookupAction.CONTAINER);
                 }
 
                 itemExcludeList.entrySet().removeIf(entry -> Boolean.TRUE.equals(entry.getValue()));
@@ -88,7 +89,7 @@ public class Rollback extends RollbackUtil {
             TreeMap<Long, Integer> chunkList = new TreeMap<>();
             HashMap<Integer, HashMap<Long, ArrayList<Object[]>>> dataList = new HashMap<>();
             HashMap<Integer, HashMap<Long, ArrayList<Object[]>>> itemDataList = new HashMap<>();
-            boolean inventoryRollback = actionList.contains(11);
+            boolean inventoryRollback = actionList.contains(LookupAction.ITEM);
 
             int worldId = -1;
             int worldMin = 0;
@@ -176,7 +177,7 @@ public class Rollback extends RollbackUtil {
             String userString = "#server";
             if (user != null) {
                 userString = user.getName();
-                if (verbose && preview == 0 && !actionList.contains(11)) {
+                if (verbose && preview == 0 && !actionList.contains(LookupAction.ITEM)) {
                     Integer chunks = chunkList.size();
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_CHUNKS_FOUND, chunks.toString(), (chunks == 1 ? Selector.FIRST : Selector.SECOND)));
                 }
@@ -184,7 +185,7 @@ public class Rollback extends RollbackUtil {
 
             // Perform update transaction(s) in consumer
             if (preview == 0) {
-                if (actionList.contains(11)) {
+                if (actionList.contains(LookupAction.ITEM)) {
                     List<Object[]> blockList = new ArrayList<>();
                     List<Object[]> inventoryList = new ArrayList<>();
                     List<Object[]> containerList = new ArrayList<>();
@@ -300,7 +301,7 @@ public class Rollback extends RollbackUtil {
                 entityCount = rollbackHashData[2];
                 ConfigHandler.rollbackHash.put(finalUserString, new int[] { itemCount, blockCount, entityCount, 0, 0 });
 
-                if (verbose && user != null && preview == 0 && !actionList.contains(11)) {
+                if (verbose && user != null && preview == 0 && !actionList.contains(LookupAction.ITEM)) {
                     Integer chunks = chunkList.size();
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_CHUNKS_MODIFIED, chunkCount.toString(), chunks.toString(), (chunks == 1 ? Selector.FIRST : Selector.SECOND)));
                 }

@@ -16,6 +16,7 @@ import org.bukkit.entity.EntityType;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
+import net.coreprotect.command.lookup.LookupAction;
 import net.coreprotect.consumer.Consumer;
 import net.coreprotect.consumer.Queue;
 import net.coreprotect.database.logger.ItemLogger;
@@ -30,13 +31,13 @@ public class LookupRaw extends Queue {
     protected static List<Object[]> performLookupRaw(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup) {
         List<Object[]> list = new ArrayList<>();
         List<Integer> invalidRollbackActions = new ArrayList<>();
-        invalidRollbackActions.add(2);
+        invalidRollbackActions.add(LookupAction.CLICK);
 
-        if (!Config.getGlobal().ROLLBACK_ENTITIES && !actionList.contains(3)) {
-            invalidRollbackActions.add(3);
+        if (!Config.getGlobal().ROLLBACK_ENTITIES && !actionList.contains(LookupAction.KILL)) {
+            invalidRollbackActions.add(LookupAction.KILL);
         }
 
-        if (actionList.contains(4) && actionList.contains(11)) {
+        if (actionList.contains(LookupAction.CONTAINER) && actionList.contains(LookupAction.ITEM)) {
             invalidRollbackActions.clear();
         }
 
@@ -50,7 +51,7 @@ public class LookupRaw extends Queue {
             ResultSet results = rawLookupResultSet(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, rowData, startTime, endTime, limitOffset, limitCount, restrictWorld, lookup, false);
 
             while (results.next()) {
-                if (actionList.contains(6) || actionList.contains(7)) {
+                if (actionList.contains(LookupAction.CHAT) || actionList.contains(LookupAction.COMMAND)) {
                     long resultId = results.getLong("id");
                     int resultTime = results.getInt("time");
                     int resultUserId = results.getInt("user");
@@ -66,7 +67,7 @@ public class LookupRaw extends Queue {
                     }
                     list.add(dataArray);
                 }
-                else if (actionList.contains(8)) {
+                else if (actionList.contains(LookupAction.SESSION)) {
                     long resultId = results.getLong("id");
                     int resultTime = results.getInt("time");
                     int resultUserId = results.getInt("user");
@@ -79,7 +80,7 @@ public class LookupRaw extends Queue {
                     Object[] dataArray = new Object[] { resultId, resultTime, resultUserId, resultWorldId, resultX, resultY, resultZ, resultAction };
                     list.add(dataArray);
                 }
-                else if (actionList.contains(9)) {
+                else if (actionList.contains(LookupAction.USERNAME)) {
                     long resultId = results.getLong("id");
                     int resultTime = results.getInt("time");
                     String resultUuid = results.getString("uuid");
@@ -88,7 +89,7 @@ public class LookupRaw extends Queue {
                     Object[] dataArray = new Object[] { resultId, resultTime, resultUuid, resultUser };
                     list.add(dataArray);
                 }
-                else if (actionList.contains(10)) {
+                else if (actionList.contains(LookupAction.SIGN)) {
                     long resultId = results.getLong("id");
                     int resultTime = results.getInt("time");
                     int resultUserId = results.getInt("user");
@@ -177,7 +178,7 @@ public class LookupRaw extends Queue {
                     int resultWorldId = results.getInt("wid");
 
                     boolean hasTbl = false;
-                    if ((lookup && actionList.size() == 0) || actionList.contains(4) || actionList.contains(5) || actionList.contains(11)) {
+                    if ((lookup && actionList.size() == 0) || actionList.contains(LookupAction.CONTAINER) || actionList.contains(LookupAction.CONTAINER_LOCATION) || actionList.contains(LookupAction.ITEM)) {
                         resultData = results.getInt("data");
                         resultAmount = results.getInt("amount");
                         resultMeta = results.getBytes("metadata");
@@ -228,7 +229,7 @@ public class LookupRaw extends Queue {
                 restrictWorld = true;
             }
 
-            boolean inventoryQuery = (actionList.contains(4) && actionList.contains(11));
+            boolean inventoryQuery = (actionList.contains(LookupAction.CONTAINER) && actionList.contains(LookupAction.ITEM));
             boolean validAction = false;
             String queryBlock = "";
             String queryEntity = "";
@@ -378,7 +379,7 @@ public class LookupRaw extends Queue {
             }
 
             // Specify actions to exclude from a:item
-            if ((lookup && actionList.size() == 0) || (actionList.contains(11) && actionList.size() == 1)) {
+            if ((lookup && actionList.size() == 0) || (actionList.contains(LookupAction.ITEM) && actionList.size() == 1)) {
                 StringBuilder actionText = new StringBuilder();
                 actionText = actionText.append(ItemLogger.ITEM_BREAK);
                 actionText.append(",").append(ItemLogger.ITEM_DESTROY);
@@ -393,7 +394,7 @@ public class LookupRaw extends Queue {
                 for (Integer actionTarget : actionList) {
                     if (validActions.contains(actionTarget)) {
                         // If just looking up drops/pickups, remap the actions to the correct values
-                        if (actionList.contains(11) && !actionList.contains(4)) {
+                        if (actionList.contains(LookupAction.ITEM) && !actionList.contains(LookupAction.CONTAINER)) {
                             if (actionTarget == ItemLogger.ITEM_REMOVE && !actionList.contains(ItemLogger.ITEM_DROP)) {
                                 actionTarget = ItemLogger.ITEM_DROP;
                             }
@@ -410,7 +411,7 @@ public class LookupRaw extends Queue {
                         }
 
                         // If selecting from co_item & co_container, add in actions for both transaction types
-                        if (actionList.contains(11) && actionList.contains(4)) {
+                        if (actionList.contains(LookupAction.ITEM) && actionList.contains(LookupAction.CONTAINER)) {
                             if (actionTarget == ItemLogger.ITEM_REMOVE) {
                                 actionText.append(",").append(ItemLogger.ITEM_PICKUP);
                                 actionText.append(",").append(ItemLogger.ITEM_REMOVE_ENDER);
@@ -428,7 +429,7 @@ public class LookupRaw extends Queue {
                             }
                         }
                         // If just looking up drops/pickups, include ender chest transactions
-                        else if (actionList.contains(11) && !actionList.contains(4)) {
+                        else if (actionList.contains(LookupAction.ITEM) && !actionList.contains(LookupAction.CONTAINER)) {
                             if (actionTarget == ItemLogger.ITEM_DROP) {
                                 actionText.append(",").append(ItemLogger.ITEM_ADD_ENDER);
                                 actionText.append(",").append(ItemLogger.ITEM_THROW);
@@ -470,7 +471,7 @@ public class LookupRaw extends Queue {
 
                 queryBlock = queryBlock + " x >= '" + xmin + "' AND x <= '" + xmax + "' AND z >= '" + zmin + "' AND z <= '" + zmax + "' AND" + queryY;
             }
-            else if (actionList.contains(5)) {
+            else if (actionList.contains(LookupAction.CONTAINER_LOCATION)) {
                 int worldId = WorldUtils.getWorldId(location.getWorld().getName());
                 int x = (int) Math.floor(location.getX());
                 int z = (int) Math.floor(location.getZ());
@@ -515,7 +516,7 @@ public class LookupRaw extends Queue {
                 queryBlock = queryBlock + " time <= '" + endTime + "' AND";
             }
 
-            if (actionList.contains(10)) {
+            if (actionList.contains(LookupAction.SIGN)) {
                 queryBlock = queryBlock + " action = '1' AND (LENGTH(line_1) > 0 OR LENGTH(line_2) > 0 OR LENGTH(line_3) > 0 OR LENGTH(line_4) > 0 OR LENGTH(line_5) > 0 OR LENGTH(line_6) > 0 OR LENGTH(line_7) > 0 OR LENGTH(line_8) > 0) AND";
             }
 
@@ -544,34 +545,34 @@ public class LookupRaw extends Queue {
             String rows = "rowid as id,time,user,wid,x,y,z,action,type,data,meta,blockdata,rolled_back";
             String queryOrder = " ORDER BY rowid DESC";
 
-            if (actionList.contains(4) || actionList.contains(5)) {
+            if (actionList.contains(LookupAction.CONTAINER) || actionList.contains(LookupAction.CONTAINER_LOCATION)) {
                 queryTable = "container";
                 rows = "rowid as id,time,user,wid,x,y,z,action,type,data,rolled_back,amount,metadata";
             }
-            else if (actionList.contains(6) || actionList.contains(7)) {
+            else if (actionList.contains(LookupAction.CHAT) || actionList.contains(LookupAction.COMMAND)) {
                 queryTable = "chat";
                 rows = "rowid as id,time,user,message";
                 if (PluginChannelHandshakeListener.getInstance().isPluginChannelPlayer(user)) {
                     rows += ",wid,x,y,z";
                 }
 
-                if (actionList.contains(7)) {
+                if (actionList.contains(LookupAction.COMMAND)) {
                     queryTable = "command";
                 }
             }
-            else if (actionList.contains(8)) {
+            else if (actionList.contains(LookupAction.SESSION)) {
                 queryTable = "session";
                 rows = "rowid as id,time,user,wid,x,y,z,action";
             }
-            else if (actionList.contains(9)) {
+            else if (actionList.contains(LookupAction.USERNAME)) {
                 queryTable = "username_log";
                 rows = "rowid as id,time,uuid,user";
             }
-            else if (actionList.contains(10)) {
+            else if (actionList.contains(LookupAction.SIGN)) {
                 queryTable = "sign";
                 rows = "rowid as id,time,user,wid,x,y,z,face,line_1,line_2,line_3,line_4,line_5,line_6,line_7,line_8";
             }
-            else if (actionList.contains(11)) {
+            else if (actionList.contains(LookupAction.ITEM)) {
                 queryTable = "item";
                 rows = "rowid as id,time,user,wid,x,y,z,type,data as metadata,0 as data,amount,action,0 as rolled_back";
             }
@@ -620,7 +621,7 @@ public class LookupRaw extends Queue {
             }
 
             boolean itemLookup = inventoryQuery;
-            if ((lookup && actionList.size() == 0) || (itemLookup && !actionList.contains(0))) {
+            if ((lookup && actionList.size() == 0) || (itemLookup && !actionList.contains(LookupAction.BLOCK_BREAK))) {
                 if (!count) {
                     rows = "rowid as id,time,user,wid,x,y,z,type,meta as metadata,data,-1 as amount,action,rolled_back";
                 }

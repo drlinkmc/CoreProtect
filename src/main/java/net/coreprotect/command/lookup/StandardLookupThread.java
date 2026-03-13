@@ -113,13 +113,13 @@ public class StandardLookupThread implements Runnable {
                 Statement statement = connection.createStatement();
                 String baduser = "";
                 for (String check : rollbackUsers) {
-                    if ((!check.equals("#global") && !check.equals("#container")) || actions.contains(9)) {
+                    if ((!check.equals("#global") && !check.equals("#container")) || actions.contains(LookupAction.USERNAME)) {
                         exists = PlayerLookup.playerExists(connection, check);
                         if (!exists) {
                             baduser = check;
                             break;
                         }
-                        else if (actions.contains(9)) {
+                        else if (actions.contains(LookupAction.USERNAME)) {
                             if (ConfigHandler.uuidCache.get(check.toLowerCase(Locale.ROOT)) != null) {
                                 String uuid = ConfigHandler.uuidCache.get(check.toLowerCase(Locale.ROOT));
                                 uuidList.add(uuid);
@@ -148,7 +148,7 @@ public class StandardLookupThread implements Runnable {
 
                 if (exists) {
                     List<String> userList = new ArrayList<>();
-                    if (!actions.contains(9)) {
+                    if (!actions.contains(LookupAction.USERNAME)) {
                         userList = rollbackUsers;
                     }
 
@@ -196,7 +196,7 @@ public class StandardLookupThread implements Runnable {
                         List<String[]> lookupList = Lookup.performPartialLookup(statement, player, uuidList, userList, blockList, excludedBlocks, excludedUsers, actions, finalLocation, radius, rowData, timeStart, timeEnd, (int) pageStart, displayResults, restrict_world, true);
 
                         Chat.sendMessage(player, Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.LOOKUP_HEADER, "CoreProtect" + Color.WHITE + " | " + Color.DARK_AQUA) + Color.WHITE + " -----");
-                        if (actions.contains(6) || actions.contains(7)) { // Chat/command
+                        if (actions.contains(LookupAction.CHAT) || actions.contains(LookupAction.COMMAND)) { // Chat/command
                             for (String[] data : lookupList) {
                                 String time = data[0];
                                 String dplayer = data[1];
@@ -212,7 +212,7 @@ public class StandardLookupThread implements Runnable {
                                 }
                             }
                         }
-                        else if (actions.contains(8)) { // login/logouts
+                        else if (actions.contains(LookupAction.SESSION)) { // login/logouts
                             for (String[] data : lookupList) {
                                 String time = data[0];
                                 String dplayer = data[1];
@@ -237,7 +237,7 @@ public class StandardLookupThread implements Runnable {
                                 PluginChannelListener.getInstance().sendInfoData(player, Integer.parseInt(time), Phrase.LOOKUP_LOGIN, (action != 0 ? Selector.FIRST : Selector.SECOND), dplayer, -1, dataX, dataY, dataZ, wid);
                             }
                         }
-                        else if (actions.contains(9)) { // username-changes
+                        else if (actions.contains(LookupAction.USERNAME)) { // username-changes
                             for (String[] data : lookupList) {
                                 String time = data[0];
                                 String user = ConfigHandler.uuidCacheReversed.get(data[1]);
@@ -247,7 +247,7 @@ public class StandardLookupThread implements Runnable {
                                 PluginChannelListener.getInstance().sendUsernameData(player, Integer.parseInt(time), user, username);
                             }
                         }
-                        else if (actions.contains(10)) { // sign messages
+                        else if (actions.contains(LookupAction.SIGN)) { // sign messages
                             for (String[] data : lookupList) {
                                 String time = data[0];
                                 String dplayer = data[1];
@@ -271,7 +271,7 @@ public class StandardLookupThread implements Runnable {
                                 PluginChannelListener.getInstance().sendMessageData(player, Integer.parseInt(time), dplayer, message, true, dataX, dataY, dataZ, wid);
                             }
                         }
-                        else if (actions.contains(4) && actions.contains(11)) { // inventory transactions
+                        else if (actions.contains(LookupAction.CONTAINER) && actions.contains(LookupAction.ITEM)) { // inventory transactions
                             for (String[] data : lookupList) {
                                 String time = data[0];
                                 String dplayer = data[1];
@@ -353,7 +353,7 @@ public class StandardLookupThread implements Runnable {
 
                                 String dname = "";
                                 boolean isPlayer = false;
-                                if (daction == 3 && !actions.contains(11) && amount == -1) {
+                                if (daction == 3 && !actions.contains(LookupAction.ITEM) && amount == -1) {
                                     if (dtype == 0) {
                                         if (ConfigHandler.playerIdCacheReversed.get(ddata) == null) {
                                             UserStatement.loadName(connection, ddata);
@@ -384,7 +384,7 @@ public class StandardLookupThread implements Runnable {
                                 Phrase phrase = Phrase.LOOKUP_BLOCK;
                                 String selector = Selector.FIRST;
                                 String action = "a:block";
-                                if (actions.contains(4) || actions.contains(5) || actions.contains(11) || amount > -1) {
+                                if (actions.contains(LookupAction.CONTAINER) || actions.contains(LookupAction.CONTAINER_LOCATION) || actions.contains(LookupAction.ITEM) || amount > -1) {
                                     byte[] metadata = data[11] == null ? null : data[11].getBytes(StandardCharsets.ISO_8859_1);
                                     String tooltip = ItemUtils.getEnchantments(metadata, dtype, amount);
 
@@ -439,7 +439,7 @@ public class StandardLookupThread implements Runnable {
                         }
                         if (rows > displayResults) {
                             int total_pages = (int) Math.ceil(rows / (displayResults + 0.0));
-                            if (actions.contains(6) || actions.contains(7) || actions.contains(9) || (actions.contains(4) && actions.contains(11))) {
+                            if (actions.contains(LookupAction.CHAT) || actions.contains(LookupAction.COMMAND) || actions.contains(LookupAction.USERNAME) || (actions.contains(LookupAction.CONTAINER) && actions.contains(LookupAction.ITEM))) {
                                 Chat.sendMessage(player, "-----");
                             }
                             Chat.sendComponent(player, ChatUtils.getPageNavigation(command.getName(), page, total_pages));

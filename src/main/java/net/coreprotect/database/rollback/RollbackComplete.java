@@ -12,6 +12,7 @@ import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 
+import net.coreprotect.command.lookup.LookupAction;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.language.Selector;
 import net.coreprotect.utility.Chat;
@@ -74,38 +75,38 @@ public class RollbackComplete {
                 }
             }
 
-            if (actionList.contains(4) && actionList.contains(11)) {
-                if (actionList.contains(0)) {
+            if (actionList.contains(LookupAction.CONTAINER) && actionList.contains(LookupAction.ITEM)) {
+                if (actionList.contains(LookupAction.BLOCK_BREAK)) {
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "+inventory", Selector.SECOND));
                 }
-                else if (actionList.contains(1)) {
+                else if (actionList.contains(LookupAction.BLOCK_PLACE)) {
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "-inventory", Selector.SECOND));
                 }
                 else {
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "inventory", Selector.SECOND));
                 }
             }
-            else if (actionList.contains(4)) {
-                if (actionList.contains(0)) {
+            else if (actionList.contains(LookupAction.CONTAINER)) {
+                if (actionList.contains(LookupAction.BLOCK_BREAK)) {
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "-container", Selector.SECOND));
                 }
-                else if (actionList.contains(1)) {
+                else if (actionList.contains(LookupAction.BLOCK_PLACE)) {
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "+container", Selector.SECOND));
                 }
                 else {
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "container", Selector.SECOND));
                 }
             }
-            else if (actionList.contains(0) && actionList.contains(1)) {
+            else if (actionList.contains(LookupAction.BLOCK_BREAK) && actionList.contains(LookupAction.BLOCK_PLACE)) {
                 Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "block", Selector.SECOND));
             }
-            else if (actionList.contains(0)) {
+            else if (actionList.contains(LookupAction.BLOCK_BREAK)) {
                 Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "-block", Selector.SECOND));
             }
-            else if (actionList.contains(1)) {
+            else if (actionList.contains(LookupAction.BLOCK_PLACE)) {
                 Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "+block", Selector.SECOND));
             }
-            else if (actionList.contains(3)) {
+            else if (actionList.contains(LookupAction.KILL)) {
                 Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_WORLD_ACTION, "kill", Selector.SECOND));
             }
 
@@ -170,7 +171,7 @@ public class RollbackComplete {
                     }
 
                     // don't display that excluded water/fire/farmland in inventory rollbacks
-                    if (actionList.contains(4) && actionList.contains(11)) {
+                    if (actionList.contains(LookupAction.CONTAINER) && actionList.contains(LookupAction.ITEM)) {
                         if (excludeTarget.equals(Material.FIRE) || excludeTarget.equals(Material.WATER) || excludeTarget.equals(Material.FARMLAND)) {
                             continue;
                         }
@@ -219,7 +220,7 @@ public class RollbackComplete {
                 int excludeCount = 0;
                 for (String excludeUser : excludeUserList) {
                     // don't display that excluded #hopper in inventory rollbacks
-                    if (actionList.contains(4) && actionList.contains(11)) {
+                    if (actionList.contains(LookupAction.CONTAINER) && actionList.contains(LookupAction.ITEM)) {
                         if (excludeUser.equals("#hopper")) {
                             continue;
                         }
@@ -242,12 +243,12 @@ public class RollbackComplete {
 
             StringBuilder modifiedData = new StringBuilder();
             Integer modifyCount = 0;
-            if (actionList.contains(5)) {
+            if (actionList.contains(LookupAction.CONTAINER_LOCATION)) {
                 modifiedData = modifiedData.append(Phrase.build(Phrase.AMOUNT_ITEM, NumberFormat.getInstance().format(blockCount), (blockCount == 1 ? Selector.FIRST : Selector.SECOND)));
                 modifyCount++;
             }
             else {
-                if (itemCount > 0 || actionList.contains(4)) {
+                if (itemCount > 0 || actionList.contains(LookupAction.CONTAINER)) {
                     modifiedData = modifiedData.append(Phrase.build(Phrase.AMOUNT_ITEM, NumberFormat.getInstance().format(itemCount), (itemCount == 1 ? Selector.FIRST : Selector.SECOND)));
                     modifyCount++;
                 }
@@ -260,7 +261,7 @@ public class RollbackComplete {
                     modifyCount++;
                 }
 
-                if (blockCount > 0 || !actionList.contains(4) || preview > 0) {
+                if (blockCount > 0 || !actionList.contains(LookupAction.CONTAINER) || preview > 0) {
                     if (modifyCount > 0) {
                         modifiedData.append(", ");
                     }
@@ -270,7 +271,7 @@ public class RollbackComplete {
             }
 
             StringBuilder modifiedDataVerbose = new StringBuilder();
-            if (verbose && preview == 0 && !actionList.contains(11)) {
+            if (verbose && preview == 0 && !actionList.contains(LookupAction.ITEM)) {
                 if (chunkCount > -1 && modifyCount < 3) {
                     if (modifyCount > 0) {
                         modifiedData.append(", ");

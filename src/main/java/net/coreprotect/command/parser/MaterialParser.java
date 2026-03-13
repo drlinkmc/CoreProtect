@@ -12,6 +12,7 @@ import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 
+import net.coreprotect.command.lookup.LookupAction;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.model.BlockGroup;
 import net.coreprotect.utility.Chat;
@@ -62,7 +63,7 @@ public class MaterialParser {
                         for (String i3 : i2) {
                             if (!checkTags(i3, restricted)) {
                                 Material i3_material = MaterialUtils.getType(i3);
-                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(4))) {
+                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(LookupAction.CONTAINER))) {
                                     restricted.add(i3_material);
                                 }
                                 else {
@@ -91,7 +92,7 @@ public class MaterialParser {
                     else {
                         if (!checkTags(argument, restricted)) {
                             Material material = MaterialUtils.getType(argument);
-                            if (material != null && (material.isBlock() || argAction.contains(4))) {
+                            if (material != null && (material.isBlock() || argAction.contains(LookupAction.CONTAINER))) {
                                 restricted.add(material);
                             }
                             else {
@@ -154,7 +155,7 @@ public class MaterialParser {
                         for (String i3 : i2) {
                             if (!checkTags(i3, excluded)) {
                                 Material i3_material = MaterialUtils.getType(i3);
-                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(4))) {
+                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(LookupAction.CONTAINER))) {
                                     excluded.put(i3_material, false);
                                 }
                                 else {
@@ -178,7 +179,7 @@ public class MaterialParser {
                     else {
                         if (!checkTags(argument, excluded)) {
                             Material iMaterial = MaterialUtils.getType(argument);
-                            if (iMaterial != null && (iMaterial.isBlock() || argAction.contains(4))) {
+                            if (iMaterial != null && (iMaterial.isBlock() || argAction.contains(LookupAction.CONTAINER))) {
                                 excluded.put(iMaterial, false);
                             }
                             else {
