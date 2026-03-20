@@ -23,6 +23,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -380,4 +381,6 @@ public class BukkitAdapter implements BukkitInterface {
     public Set<Material> shelfMaterials() {
         return EMPTY_SET;
     }
+
+    public boolean shouldLogExplosion(EntityExplodeEvent event) { return true; }
 }

@@ -1,15 +1,8 @@
 package net.coreprotect.listener.entity;
 
+import net.coreprotect.bukkit.BukkitAdapter;
 import org.bukkit.World;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.EnderCrystal;
-import org.bukkit.entity.EnderDragon;
-import org.bukkit.entity.EnderDragonPart;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Minecart;
-import org.bukkit.entity.TNTPrimed;
-import org.bukkit.entity.Wither;
-import org.bukkit.entity.WitherSkull;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -24,7 +17,14 @@ public final class EntityExplodeListener extends Queue implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     protected void onEntityExplode(EntityExplodeEvent event) {
         Entity entity = event.getEntity();
-        if (entity.getType().name().equals("WIND_CHARGE") || entity.getType().name().equals("BREEZE_WIND_CHARGE")) {
+
+        if (!BukkitAdapter.ADAPTER.shouldLogExplosion(event)) {
+            return;
+        }
+
+        // Somehow windburst enchanted maces trigger
+        // ExplosionResult.DESTROY_WITH_DECAY instead of ExplosionResult.TRIGGER_BLOCK
+        if (entity instanceof Player){
             return;
         }
 

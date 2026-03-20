@@ -15,6 +15,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -454,4 +455,14 @@ public interface BukkitInterface {
 
     Set<Material> shelfMaterials();
 
+    /**
+     * Delegates the logic to log explosion events to version specific adapters.
+     * For 1.21, this method will determine this from ExplosionResult
+     * This enables not logging non-destroying block explosions like windburst or mace windbursts
+     *
+     * @param event EntityExplodeEvent
+     *
+     * @return Whether the explosion event should be logged
+     */
+    public boolean shouldLogExplosion(EntityExplodeEvent event);
 }
