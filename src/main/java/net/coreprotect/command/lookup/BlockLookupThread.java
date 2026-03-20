@@ -53,7 +53,7 @@ public class BlockLookupThread implements Runnable {
                             bypass = split[1];
                         }
 
-                        if (signMessage.length() > 0) {
+                        if (!signMessage.isEmpty()) {
                             Chat.sendComponent(player, signMessage, bypass);
                         }
                     }

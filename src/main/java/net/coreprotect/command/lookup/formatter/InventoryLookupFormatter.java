@@ -1,6 +1,5 @@
 package net.coreprotect.command.lookup.formatter;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Locale;
@@ -8,6 +7,7 @@ import java.util.Locale;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 
+import net.coreprotect.command.lookup.row.BlockRow;
 import net.coreprotect.database.logger.ItemLogger;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.language.Selector;
@@ -33,29 +33,19 @@ public class InventoryLookupFormatter implements LookupFormatter {
     @Override
     public void formatResults(List<String[]> lookupList, int unixtimestamp, Connection connection) throws Exception {
         for (String[] data : lookupList) {
-            String time = data[0];
-            String dplayer = data[1];
-            int dtype = Integer.parseInt(data[5]);
-            int ddata = Integer.parseInt(data[6]);
-            int daction = Integer.parseInt(data[7]);
-            int amount = Integer.parseInt(data[10]);
-            int wid = Integer.parseInt(data[9]);
-            int dataX = Integer.parseInt(data[2]);
-            int dataY = Integer.parseInt(data[3]);
-            int dataZ = Integer.parseInt(data[4]);
-            String rbd = ((Integer.parseInt(data[8]) == 2 || Integer.parseInt(data[8]) == 3) ? Color.STRIKETHROUGH : "");
-            String timeago = ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, true);
-            Material blockType = ItemUtils.itemFilter(MaterialUtils.getType(dtype), (Integer.parseInt(data[13]) == 0));
-            String dname = StringUtils.nameFilter(blockType.name().toLowerCase(Locale.ROOT), ddata);
-            byte[] metadata = data[11] == null ? null : data[11].getBytes(StandardCharsets.ISO_8859_1);
-            String tooltip = ItemUtils.getEnchantments(metadata, dtype, amount);
+            BlockRow row = BlockRow.fromRawData(data);
+            String rbd = row.getInventoryRolledBackFormat(Color.STRIKETHROUGH);
+            String timeago = ChatUtils.getTimeSince(row.time, unixtimestamp, true);
+            Material blockType = ItemUtils.itemFilter(MaterialUtils.getType(row.type), (row.table == 0));
+            String dname = StringUtils.nameFilter(blockType.name().toLowerCase(Locale.ROOT), row.data);
+            String tooltip = ItemUtils.getEnchantments(row.meta, row.type, row.amount);
 
-            String[] tagAndSelector = resolveTagAndSelector(daction);
+            String[] tagAndSelector = resolveTagAndSelector(row.action);
             String tag = tagAndSelector[0];
             String selector = tagAndSelector[1];
 
-            Chat.sendComponent(player, timeago + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rbd + dplayer + Color.WHITE + rbd, "x" + amount, ChatUtils.createTooltip(Color.DARK_AQUA + rbd + dname, tooltip) + Color.WHITE, selector));
-            PluginChannelListener.getInstance().sendData(player, Integer.parseInt(time), Phrase.LOOKUP_CONTAINER, selector, dplayer, dname, amount, dataX, dataY, dataZ, wid, rbd, true, tag.contains("+"));
+            Chat.sendComponent(player, timeago + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rbd + row.player + Color.WHITE + rbd, "x" + row.amount, ChatUtils.createTooltip(Color.DARK_AQUA + rbd + dname, tooltip) + Color.WHITE, selector));
+            PluginChannelListener.getInstance().sendData(player, row.time, Phrase.LOOKUP_CONTAINER, selector, row.player, dname, row.amount, row.x, row.y, row.z, row.wid, rbd, true, tag.contains("+"));
         }
     }
 

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.bukkit.command.CommandSender;
 
+import net.coreprotect.command.lookup.row.ChatRow;
 import net.coreprotect.listener.channel.PluginChannelHandshakeListener;
 import net.coreprotect.listener.channel.PluginChannelListener;
 import net.coreprotect.utility.Chat;
@@ -25,19 +26,13 @@ public class ChatLookupFormatter implements LookupFormatter {
     @Override
     public void formatResults(List<String[]> lookupList, int unixtimestamp, Connection connection) throws Exception {
         for (String[] data : lookupList) {
-            String time = data[0];
-            String dplayer = data[1];
-            String message = data[2];
-            String timeago = ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, true);
+            ChatRow row = ChatRow.fromRawData(data);
+            String timeago = ChatUtils.getTimeSince(row.time, unixtimestamp, true);
 
-            Chat.sendComponent(player, timeago + " " + Color.WHITE + "- " + Color.DARK_AQUA + dplayer + ": " + Color.WHITE, message);
+            Chat.sendComponent(player, timeago + " " + Color.WHITE + "- " + Color.DARK_AQUA + row.player + ": " + Color.WHITE, row.message);
 
-            if (PluginChannelHandshakeListener.getInstance().isPluginChannelPlayer(player)) {
-                int wid = Integer.parseInt(data[3]);
-                int dataX = Integer.parseInt(data[4]);
-                int dataY = Integer.parseInt(data[5]);
-                int dataZ = Integer.parseInt(data[6]);
-                PluginChannelListener.getInstance().sendMessageData(player, Integer.parseInt(time), dplayer, message, false, dataX, dataY, dataZ, wid);
+            if (row.hasCoordinates && PluginChannelHandshakeListener.getInstance().isPluginChannelPlayer(player)) {
+                PluginChannelListener.getInstance().sendMessageData(player, row.time, row.player, row.message, false, row.x, row.y, row.z, row.wid);
             }
         }
     }

@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 
 import com.google.common.base.Strings;
 
+import net.coreprotect.command.lookup.row.SessionRow;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.language.Selector;
 import net.coreprotect.listener.channel.PluginChannelListener;
@@ -29,23 +30,17 @@ public class SessionLookupFormatter implements LookupFormatter {
     }
 
     @Override
-    public void formatResults(List<String[]> lookupList, int unixtimestamp, Connection connection) throws Exception {
+    public void formatResults(List<String[]> lookupList, int timestamp, Connection connection) throws Exception {
         for (String[] data : lookupList) {
-            String time = data[0];
-            String dplayer = data[1];
-            int wid = Integer.parseInt(data[2]);
-            int dataX = Integer.parseInt(data[3]);
-            int dataY = Integer.parseInt(data[4]);
-            int dataZ = Integer.parseInt(data[5]);
-            int action = Integer.parseInt(data[6]);
-            String timeago = ChatUtils.getTimeSince(Integer.parseInt(time), unixtimestamp, true);
+            SessionRow row = SessionRow.fromRawData(data);
+            String timeAgo = ChatUtils.getTimeSince(row.time, timestamp, true);
+            String leftPadding = computeLeftPadding(row.time, timestamp);
 
-            String leftPadding = computeLeftPadding(Integer.parseInt(time), unixtimestamp);
-
-            String tag = (action != 0 ? Color.GREEN + "+" : Color.RED + "-");
-            Chat.sendComponent(player, timeago + " " + tag + " " + Color.DARK_AQUA + Phrase.build(Phrase.LOOKUP_LOGIN, Color.DARK_AQUA + dplayer + Color.WHITE, (action != 0 ? Selector.FIRST : Selector.SECOND)));
-            Chat.sendComponent(player, Color.WHITE + leftPadding + Color.GREY + "^ " + ChatUtils.getCoordinates(command.getName(), wid, dataX, dataY, dataZ, true, true));
-            PluginChannelListener.getInstance().sendInfoData(player, Integer.parseInt(time), Phrase.LOOKUP_LOGIN, (action != 0 ? Selector.FIRST : Selector.SECOND), dplayer, -1, dataX, dataY, dataZ, wid);
+            String tag = (row.action != 0 ? Color.GREEN + "+" : Color.RED + "-");
+            String selector = (row.action != 0 ? Selector.FIRST : Selector.SECOND);
+            Chat.sendComponent(player, timeAgo + " " + tag + " " + Color.DARK_AQUA + Phrase.build(Phrase.LOOKUP_LOGIN, Color.DARK_AQUA + row.player + Color.WHITE, selector));
+            Chat.sendComponent(player, Color.WHITE + leftPadding + Color.GREY + "^ " + ChatUtils.getCoordinates(command.getName(), row.wid, row.x, row.y, row.z, true, true));
+            PluginChannelListener.getInstance().sendInfoData(player, row.time, Phrase.LOOKUP_LOGIN, selector, row.player, -1, row.x, row.y, row.z, row.wid);
         }
     }
 
